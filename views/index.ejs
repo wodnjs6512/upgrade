@@ -1,0 +1,87 @@
+<html locale="LANG=en_US.UTF-8 /opt/google/chrome/chrome">
+    <title>
+        <%=title%>
+    </title>
+    <head>
+        <%=title%> Upgrade Assessment
+    </head>
+    <hr/>
+    <body>
+    <% if(err!=null){ %>
+        <div> <%= err %> </div>
+        <hr/>
+    <%}%>
+    <form type="hidden" name="form1" method="POST" action="/">
+        <table>
+            <tr>
+                <h1>Reservation form</h1>
+            </tr>
+            <tr>
+                <td>First name</td>
+                <td><input type="text" name="fname" required></td>
+            </tr>
+            <tr>
+                <td>Last name</td>
+                <td><input type="text" name="lname" required></td>
+            </tr>
+            <tr>
+                <td>e-mail</td>
+                <td><input type="email" name="userEmail" required></td>
+            </tr>
+            <tr>
+                <td>Starting date</td>
+                <td><input type="date" name="sdate" required></td>
+            </tr>
+            <tr>
+                <td>Ending date</td>
+                <td><input type="date" name="edate" required></td>
+            </tr>
+            <tr>
+                <td colspan="2"><input type="submit" value="Submit" ></td>
+            </tr>
+        </table>
+    </form>
+
+    <form name="form2" type="hidden" method="DELETE" action="/delete">
+        <table>
+            <tr>
+                <h1>Cancel Reservation form</h1>
+            </tr>
+            <tr>
+                <td>id</td>
+                <td><input type="text" name="id" required></td>
+            </tr>
+            <tr>
+                <td>email</td>
+                <td><input type="text" name="email" required></td>
+            </tr>
+
+            <tr>
+                <td colspan="2"><input type="submit" value="Submit" ></td>
+            </tr>
+        </table>
+    </form>
+
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Reservation</th>
+        </tr>
+        <% for(var i=0; i<dates.length; i++) {
+            var date = new Date();
+            date.setDate(date.getDate()+i);
+            %>
+            <tr>
+                <td><%=(date.getYear()+1900)+"/"+(date.getMonth()+1)+"/"+date.getDate()%></td>
+                <%if(dates[i]==1){%>
+                    <td>Reserved</td>
+                <%}%>
+            </tr>
+        <%}%>
+    </table>
+
+
+
+
+    </body>
+</html>
