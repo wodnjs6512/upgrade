@@ -19,7 +19,7 @@ var connection = mysql.createConnection({
     multipleStatements: true
 });
 
-var dates;
+var dates = new Array(30);
 var rowsLocal;
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -66,57 +66,57 @@ app.post('/', function(req,res,next){
             'lname varchar(60) NOT NULL,'+
             'email varchar(60) NOT NULL);'
             , (err,rows,fields)=>{
-                if(err){
+            if(err){
+                console.log(err);
+                res.render('index',{title: 'Jaewon Simon Lee',err:"DATABASE ERROR",rows:rowsLocal,dates:dates});
+            }
+            connection.query('SELECT count(*) as count from reservation where email = \'' + req.body.userEmail+'\' and endingDate > (CURDATE());',
+            (err,rows,fields)=>{
+            if(err){
+                console.log(err);
+            }
+            if(rows[0].count<=0 ||rows[0].count==undefined){
+            connection.query('SELECT count(*) as count from reservation where startingDate < STR_TO_DATE(\''+req.body.edate+'\',\'%Y-%m-%d\')' +
+                'IN (SELECT startingDate where endingDate > STR_TO_DATE(\''+req.body.sdate+'\',\'%Y-%m-%d\'));'
+                , (err,rows,fields)=>{
+                if(err) {
                     console.log(err);
-                    res.render('index',{title: 'Jaewon Simon Lee',err:"DATABASE ERROR",rows:rowsLocal,dates:dates});
                 }
-                connection.query('SELECT count(*) as count from reservation where email = \'' + req.body.userEmail+'\' and endingDate > (CURDATE());',
+
+                let count = rows[0].count;
+
+            if(count == 0){
+
+                connection.query('INSERT INTO reservation VALUES(' +
+                    'null,' +
+                    'STR_TO_DATE(\''+req.body.sdate+'\',\'%Y-%m-%d\'),' +
+                    'STR_TO_DATE(\''+req.body.edate+'\',\'%Y-%m-%d\'),' +
+                    '\''+req.body.fname +'\',' +
+                    '\''+req.body.lname +'\',' +
+                    '\''+req.body.userEmail+'\');\n' +
+                    'SELECT LAST_INSERT_ID() as last;',
                     (err,rows,fields)=>{
-                        if(err){
-                            console.log(err);
-                        }
-                        if(rows[0].count<=0 ||rows[0].count==undefined){
-                            connection.query('SELECT count(*) as count from reservation where startingDate < STR_TO_DATE(\''+req.body.edate+'\',\'%Y-%m-%d\')' +
-                                'IN (SELECT startingDate where endingDate > STR_TO_DATE(\''+req.body.sdate+'\',\'%Y-%m-%d\'));'
-                                , (err,rows,fields)=>{
-                                    if(err) {
-                                        console.log(err);
-                                    }
-
-                                    let count = rows[0].count;
-
-                                    if(count == 0){
-
-                                        connection.query('INSERT INTO reservation VALUES(' +
-                                            'null,' +
-                                            'STR_TO_DATE(\''+req.body.sdate+'\',\'%Y-%m-%d\'),' +
-                                            'STR_TO_DATE(\''+req.body.edate+'\',\'%Y-%m-%d\'),' +
-                                            '\''+req.body.fname +'\',' +
-                                            '\''+req.body.lname +'\',' +
-                                            '\''+req.body.userEmail+'\');\n' +
-                                            'SELECT LAST_INSERT_ID() as last;',
-                                            (err,rows,fields)=>{
-                                                if(err){
-                                                    console.log(err);
-                                                    res.render('index',{title: 'Jaewon Simon Lee',err:"Insert error",rows:rowsLocal,dates:dates});
-                                                }
-                                                else{
-                                                    res.render('index',{title: 'Jaewon Simon Lee',err:"Reservation Made, "+rows[1][0].last+" is your confirmation number",rows:rowsLocal,dates:dates})
-                                                }
-                                            }
-                                        )
-                                    }
-                                    else{
-                                        res.render('index',{title: 'Jaewon Simon Lee',err:"Someone took the spot you wanted",rows:rowsLocal,dates:dates});
-                                    }
-                                });
-                        }
-                        else {
-                            res.render('index',{title: 'Jaewon Simon Lee',err:"You already have reservation",rows:rowsLocal,dates:dates});
-                        }
+                    if(err){
+                        console.log(err);
+                        res.render('index',{title: 'Jaewon Simon Lee',err:"Insert error",rows:rowsLocal,dates:dates});
                     }
-                )
-            });
+                    else{
+                        res.render('index',{title: 'Jaewon Simon Lee',err:"Reservation Made, "+rows[1][0].last+" is your confirmation number",rows:rowsLocal,dates:dates})
+                }
+            }
+            )
+            }
+            else{
+                res.render('index',{title: 'Jaewon Simon Lee',err:"Someone took the spot you wanted",rows:rowsLocal,dates:dates});
+            }
+        });
+        }
+        else {
+            res.render('index',{title: 'Jaewon Simon Lee',err:"You already have reservation",rows:rowsLocal,dates:dates});
+        }
+    }
+        )
+    });
         done(new Error('error'));
     }, function(err, ret) {
         console.log("lock1 release")
@@ -126,27 +126,27 @@ app.post('/', function(req,res,next){
 app.get('/', function(req, res, next) {
     connection.query('select * from reservation where startingDate > (CURDATE()-1) order by startingDate ASC;',
         (err,rows,fields)=>{
-            console.log(rows);
-            if(!err){
-                rowsLocal = rows;
-                dates = new Array(30);
-                for(var i = 0;i<rows.length;i++){
-
-                    let sDateDifference = Math.ceil((rows[i].startingDate.getTime()-new Date().getTime())/ (1000 * 3600 * 24));
-
-                    let duration = Math.ceil((rows[i].endingDate.getTime()-rows[i].startingDate.getTime())/ (1000 * 3600 * 24));
-
-                    console.log(sDateDifference,duration);
-                    for(var j = 0; j<duration;j++){
-                        if((sDateDifference+j)>=0){
-                            dates[sDateDifference+j] = 1;
-                        }
+        console.log(rows);
+        if(!err){
+            rowsLocal = rows;
+            dates = new Array(30);
+            for(var i = 0;i<rows.length;i++){
+    
+                let sDateDifference = Math.ceil((rows[i].startingDate.getTime()-new Date().getTime())/ (1000 * 3600 * 24));
+    
+                let duration = Math.ceil((rows[i].endingDate.getTime()-rows[i].startingDate.getTime())/ (1000 * 3600 * 24));
+    
+                console.log(sDateDifference,duration);
+                for(var j = 0; j<duration;j++){
+                    if((sDateDifference+j)>=0){
+                        dates[sDateDifference+j] = 1;
                     }
-                    console.log(dates);
                 }
+                console.log(dates);
             }
-            res.render('index', { title: 'Jaewon Simon Lee',err:null,rows:rowsLocal,dates:dates});
-        })
+        }
+        res.render('index', { title: 'Jaewon Simon Lee',err:null,rows:rowsLocal,dates:dates});
+    })
 });
 
 // DELETE, has to be "delete, instead of get" for the normal request gather scheme
@@ -154,29 +154,29 @@ app.get('/delete',function(req,res,next){
     console.log(req.query);
     console.log("delete from reservation where id = "+req.query.id + ", userEmail = \'"+req.query.email+"\';");
     connection.query("delete from reservation where id = "+req.query.id + " and email = \'"+req.query.email+"\';",(err,rows,fields)=>{
-      console.log(err);
-      if(!err){
-        res.redirect('/');
-      }
+        console.log(err);
+        if(!err){
+            res.redirect('/');
+        }
     });
 });
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  next(createError(404));
+    next(createError(404));
 });
 
 
 
 // error handler
 app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+    // render the error page
+    res.status(err.status || 500);
+    res.render('error');
 });
 
 module.exports = app;
